@@ -18,30 +18,28 @@ version
 
 ### Loading Required Libraries and Loading and Preprocessing the Data
 
-For this analysis I will use the "data.table" and the "ggplot2" packages. 
+For this analysis I will use the "data.table" package. 
 
 ```{r libraries}
-# These commands check whether a package has been installed and loads it. If the package has not been installed, it is downloaded,
-# installed, and loaded.
+# These commands check whether a package has been installed and loads it. If the package has not been installed, it 
+# is downloaded, installed, and loaded.
 if(!require("data.table")) install.packages("data.table", repos = "http://cran.r-project.org") 
 library(data.table)
-if(!require("ggplot2")) install.packages("ggplot2", repos = "http://cran.r-project.org")
-library(ggplot2)
 ```
 
 After forking [this repository](http://github.com/rdpeng/RepData_PeerAssessment1) and cloning it to my machine, I created directories for the data and figures using the commands below.
 
 ```{r}
 dir <- "./data" # data directory
-if (!file.exists(dir)) {dir.create(dir)} # creates a data directory in your working directory if one doesn't already exist
+if (!file.exists(dir)) {dir.create(dir)} # creates a data directory in the working directory if one doesn't already exist
 fig <- "./figures" # figure directory
-if (!file.exists(fig)) {dir.create(fig)} # creates a figure directory in your working directory if one doesn't already exist
+if (!file.exists(fig)) {dir.create(fig)} # creates a figure directory in the working directory if one doesn't already exist
 ```
 
 Once the necessary directories have been created, the data are unzipped from the "activity.zip" file to "activity.csv" in the data directory. After unzipping the data, it is read into R using "fread" from the data.table package and dates are converted from character strings to a date format. By examining the data in the interval column, it is apparent that these data are the times at which the data were collected (i.e., 5 corresponds to 00:05, 2330 corresponds to 23:30, etc.). By examining the steps column, it is readily apparent that there are missing data within the dataset.  
 
 ```{r}
-## Checks whether the data has been unzipped to your data directory and if not, unzips it and saves it in the data directory
+## Checks whether the data has been unzipped to the data directory and if not, unzips it and saves it there
 if (!("activity.csv" %in% list.files(dir))) {
   unzip("activity.zip", exdir = "data") # unzips the file(s) to the data directory
 }
@@ -84,7 +82,7 @@ The mean and median total number of steps taken per day are `r mmsteps$mean_step
 For the second part of this analysis, I wanted to know whether there were patterns to the anonymous individual's daily activities. To evaluate this, the plot below is a time series of the average number of steps taken during each time period across the entire dataset (i.e., across all days of the dataset). 
 
 ```{r timeseries}
-## Calculate the average number of steps taken each 5-minute time period (across all days) and plot these data as a time series
+## Calculate the average number of steps taken each 5-minute time period (across all days) and plot these data 
 plot(activity[, list(avg_steps = mean(steps, na.rm = TRUE)), by = interval], 
      type = "l",
      xlim = c(0, 2400),
@@ -99,7 +97,7 @@ axis(1, at = seq(0, 2400, by = 600), labels = c("00:00", "06:00", "12:00", "18:0
 As seen in the plot above, across the entire dataset, a large spike in activity is observed sometime around 8 AM. 
 
 ```{r calc_max_activity}
-## Determines which interval, on average, contains the maximum average number of steps and converts the result to a time format.
+## Determines which interval, on average, contains the maximum average number of steps and converts it to a time format.
 max_activity <- activity[, list(avg_steps = mean(steps, na.rm = TRUE)), by = interval][, .SD[which.max(avg_steps)]]
 time <- strptime(sprintf("%04d", max_activity$interval), format = "%H%M")
 ```
@@ -119,14 +117,14 @@ Summary statistics on the steps column indicate that there are `r sum(is.na(acti
 
 ```{r impute_data}
 ## Imputes values for the missing data using the average of total number of steps taken during a particular time interval
-activity_imp <- activity[, steps_imp := ifelse(is.na(steps), mean(steps, na.rm = TRUE), steps), by = interval]
+activity[, steps_imp := ifelse(is.na(steps), mean(steps, na.rm = TRUE), steps), by = interval]
 ```
 
 To examine the effect imputing missing data has on the dataset, the analyses performed in the first section of this analysis (i.e., "What is the Mean Total Number of Steps Taken per Day?") are reproduced below using the imputed dataset.
 
 ```{r histogram_mean_steps_imp}
 ## Calculate the total number of steps taken each day and plot a histogram of this data
-hist(activity_imp[, list(num_steps = sum(steps_imp, na.rm = TRUE)), by = date][, num_steps], 
+hist(activity[, list(num_steps = sum(steps_imp, na.rm = TRUE)), by = date][, num_steps], 
      breaks = 10,
      xlab = "Number of Steps", 
      main = "Histogram of the Total Number of Steps \nTaken Each Day (Imputed Dataset)")
@@ -150,10 +148,11 @@ As can be seen above, by imputing data for the missing values, the mean total nu
 As observed in the time series plot of steps taken each day, there was a sharp rise in the number of steps taken at `r format(time, format = "%H:%M")`. To assess whether this increase was a result of a factor like commuting to work or school, I classified each day within the dataset as being either a "weekday" or a "weekend" and then prepared time series plots of the average number of steps (using the imputed dataset) taken during each time period across the entire dataset (i.e., across all days of the dataset) for each of these categories. This plot is presented below.
 
 ```{r ww_timeseries}
+## Classifies whether the day is a "weekday" or a "weekend"
 activity[, weekday := ifelse(weekdays(date) %in% c("Saturday", "Sunday"), "Weekend", "Weekday")]
-setkey(activity, weekday)
+setkey(activity, weekday) # Allows for the fast subsetting of a data.table using "J" as shown below
 
-par(mfrow = c(2,1), mar = c(4, 5, 2, 2))
+par(mfrow = c(2,1), mar = c(4, 5, 2, 2)) # Create a 2:1 (2 rows, 1 column) panel plot
   plot(activity[J("Weekday"), list(avg_steps = mean(steps_imp, na.rm = TRUE)), by = interval], 
        type = "l",
        xlim = c(0, 2400),
